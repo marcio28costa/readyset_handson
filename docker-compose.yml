@@ -1,0 +1,72 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: rs-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: readyset
+      MYSQL_DATABASE: demo
+      MYSQL_USER: rsuser
+      MYSQL_PASSWORD: readyset
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./init/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+      - ./mysql-config/custom.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-uroot', '-preadyset']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  readyset:
+    image: readysettech/readyset:latest
+    container_name: rs-cache
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - '3307:3307'
+      - '6034:6034'
+    environment:
+      DEPLOYMENT_ENV: quickstart_mysql
+      PROMETHEUS_METRICS: 'true'
+      UPSTREAM_DB_URL: mysql://rsuser:readyset@mysql:3306/demo
+      LISTEN_ADDRESS: 0.0.0.0:3307
+      STORAGE_DIR: /data/cache
+      STANDALONE: 'true'
+      DATABASE_TYPE: mysql
+      QUERY_CACHING: explicit
+      CACHE_MODE: deep          # <-- obrigatorio para CDC
+    volumes:
+      - readyset_cache:/data/cache
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://127.0.0.1:6034/health']
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+
+  demo-app:
+    build: ./app
+    container_name: rs-demo-app
+    depends_on:
+      readyset:
+        condition: service_healthy
+    environment:
+      READYSET_HOST: readyset
+      READYSET_PORT: '3307'
+      MYSQL_HOST: mysql
+      MYSQL_PORT: '3306'
+      DB_USER: rsuser
+      DB_PASS: readyset
+      DB_NAME: demo
+
+volumes:
+  mysql_data:
+  readyset_cache:
+

@@ -28,7 +28,7 @@ Binlog (CDC)
 ---
 
 ## 🧱 Estrutura do projeto
-
+<pre> ```
 .
 ├── app
 │   ├── benchmark.py
@@ -39,7 +39,7 @@ Binlog (CDC)
 │   └── seed.sql
 └── mysql-config
     └── custom.cnf
-
+``` </pre>
 ---
 
 ## ⚙️ Pré-requisitos

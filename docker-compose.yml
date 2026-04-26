@@ -51,21 +51,6 @@ services:
       retries: 20
       start_period: 60s
 
-  demo-app:
-    build: ./app
-    container_name: rs-demo-app
-    depends_on:
-      readyset:
-        condition: service_healthy
-    environment:
-      READYSET_HOST: readyset
-      READYSET_PORT: '3307'
-      MYSQL_HOST: mysql
-      MYSQL_PORT: '3306'
-      DB_USER: rsuser
-      DB_PASS: readyset
-      DB_NAME: demo
-
 volumes:
   mysql_data:
   readyset_cache:
